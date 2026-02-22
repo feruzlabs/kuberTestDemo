@@ -26,17 +26,24 @@ spec:
               value: "dev"
             - name: SERVER_PORT
               value: "8010"
+          startupProbe:
+            httpGet:
+              path: /api-docs
+              port: 8010
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 24
           livenessProbe:
             httpGet:
               path: /api-docs
               port: 8010
-            initialDelaySeconds: 60
+            initialDelaySeconds: 0
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /api-docs
               port: 8010
-            initialDelaySeconds: 30
+            initialDelaySeconds: 0
             periodSeconds: 5
           resources:
             requests:
