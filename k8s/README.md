@@ -158,6 +158,42 @@ Brauzerda: `https://demo.feruzlabs.dev/kube-test-1/swagger-ui/index.html`
 
 ---
 
+## 7. Argo CD orqali deploy (GitOps)
+
+Argo CD reponi kuzatadi: `k8s/` dagi o‘zgarishlar push qilingach, sync qilinadi.
+
+### Bir marta sozlash
+
+1. **Argo CD** cluster da o‘rnatilgan bo‘lsin.
+
+2. **Application** yarating — `k8s/argocd/application.yaml` da `repoURL` ni o‘z repo manzilingizga o‘zgartiring:
+   ```yaml
+   repoURL: https://github.com/YOUR_ORG/kuberTestDemo.git
+   targetRevision: main   # yoki master
+   ```
+
+3. **Apply qiling:**
+   ```bash
+   kubectl apply -f k8s/argocd/application.yaml
+   ```
+
+4. Argo CD UI da `kuber-test-demo` Application paydo bo‘ladi; avtomatik sync yoqilgan.
+
+**Private repo bo‘lsa:** Argo CD da repo qo‘shing (Settings → Repositories) yoki Application da `source.helm.values` o‘rniga SSH/HTTPS credential sozlang.
+
+### Push qilish oqimi
+
+| Qadam | Nima qiladi |
+|-------|-------------|
+| 1 | Kod o‘zgarishi → `main`/`master` ga push |
+| 2 | GitHub Action image ni build qiladi va Docker Hub ga push qiladi |
+| 3 | `k8s/*.yaml` o‘zgarsa (yoki image tag ni o‘zgartirsangiz) → push |
+| 4 | Argo CD Git dan yangilanishni oladi va cluster ni sync qiladi |
+
+**Image tag ni yangilash:** `k8s/deployment.yaml` da `image: docker.io/feruzlabs/kuber-test-demo:TAG` ni o‘zgartiring va push qiling — Argo CD yangi image ni deploy qiladi. `latest` ishlatilsa, har safar sync da yangi image pull qilinadi.
+
+---
+
 ## Muammolar
 
 ### HSTS xatosi (Chrome "Proceed" bermasa)

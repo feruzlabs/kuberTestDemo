@@ -1,0 +1,30 @@
+# Argo CD Application — bu faylni bir marta cluster ga apply qilasiz.
+# Keyin Argo CD shu repo ning k8s/ papkasini kuzatadi; main/master ga push = sync.
+#
+# Apply: kubectl apply -f k8s/argocd/application.yaml
+# (Argo CD o'rnatilgan bo'lishi kerak)
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kuber-test-demo
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/YOUR_ORG/kuberTestDemo.git   # ← GitHub repo URL ni o'zgartiring
+    targetRevision: main                                    # yoki master
+    path: k8s
+    directory:
+      exclude: argocd/   # application.yaml ni app namespace ga apply qilmaslik
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
