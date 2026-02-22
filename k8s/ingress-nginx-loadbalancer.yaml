@@ -1,20 +1,10 @@
 # =====================================================================
-# Ingress NGINX Controller — LoadBalancer service with specific IP
-# Maqsad: 144.91.116.93 ga 80 (redirect) va 443 (HTTPS) portlarini bog'lash
-# =====================================================================
+# Ingress NGINX Controller — LoadBalancer service, IP: 144.91.116.93
+# loadBalancerIP deprecated (K8s 1.24+). Zamonaviy usul: annotatsiya.
 #
-# Bu fayl ingress-nginx controller'ni scratch install qilish yoki
-# mavjud install'ga patch berish uchun ishlatiladi.
+# Cluster tipingizga qarab bitta annotatsiyani yoqing (quyida).
 #
-# MAVJUD ingress-nginx'ga patch berish:
-#   1) Namespace va service nomini aniqlang:
-#      kubectl get svc -A | grep ingress
-#   2) Patch bering:
-#      kubectl patch svc <SVC_NAME> -n <NAMESPACE> \
-#        -p '{"spec":{"loadBalancerIP":"144.91.116.93"}}'
-#
-# YANGI ingress-nginx o'rnatish (bu fayl bilan):
-#   kubectl apply -f k8s/ingress-nginx-loadbalancer.yaml
+# Apply: kubectl apply -f k8s/ingress-nginx-loadbalancer.yaml
 # =====================================================================
 ---
 apiVersion: v1
@@ -24,9 +14,6 @@ metadata:
   labels:
     app.kubernetes.io/name: ingress-nginx
 ---
-# ingress-nginx official manifest'ni apply qiling:
-#   kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/cloud/deploy.yaml
-# Keyin faqat service'ni patch qilish uchun quyidagi manifest ishlatiladi:
 apiVersion: v1
 kind: Service
 metadata:
@@ -36,13 +23,27 @@ metadata:
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/component: controller
   annotations:
-    # cloud provider uchun: rezerv qilingan static IP
-    # GKE: kubernetes.io/ingress.regional-static-ip-name: "my-static-ip"
-    # AWS: service.beta.kubernetes.io/aws-load-balancer-eip-allocations: "eipalloc-xxx"
-    # Generic/K3s/bare-metal: loadBalancerIP field ishlating (quyida)
+    # ── MetalLB (v0.13+) ─────────────────────────────────────────────
+    # Bare-metal / K3s + MetalLB bo'lsa shu annotatsiyani ishlating.
+    # IPAddressPool da 144.91.116.93 bo'lishi kerak.
+    metallb.universe.tf/loadBalancerIPs: "144.91.116.93"
+
+    # ── K3s built-in ServiceLB (Klipper) ─────────────────────────────
+    # MetalLB yo'q, K3s o'z built-in LB ishlatsa:
+    #   Node'da shu label bo'lishi kerak:
+    #   kubectl label node <NODE_NAME> svccontroller.k3s.cattle.io/enablelb=true
+    #   Keyin annotatsiya shart emas — node tashqi IP (144.91.116.93) avtomatik ishlatiladi.
+
+    # ── GKE ──────────────────────────────────────────────────────────
+    # networking.gke.io/load-balancer-type: "External"
+    # cloud.google.com/load-balancer-static-ip: "144.91.116.93"
+
+    # ── AWS (NLB) ─────────────────────────────────────────────────────
+    # service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    # service.beta.kubernetes.io/aws-load-balancer-eip-allocations: "eipalloc-XXXXX"
+
 spec:
   type: LoadBalancer
-  loadBalancerIP: "144.91.116.93"   # <-- tashqi IP
   externalTrafficPolicy: Local
   ipFamilyPolicy: SingleStack
   ipFamilies:

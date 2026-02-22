@@ -8,7 +8,7 @@ metadata:
 spec:
   secretName: demo-feruzlabs-dev-tls
   issuerRef:
-    name: selfsigned-issuer
+    name: letsencrypt-prod
     kind: ClusterIssuer
   dnsNames:
     - demo.feruzlabs.dev

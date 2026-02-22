@@ -44,9 +44,12 @@ kubectl apply -f k8s/ingress-nginx-loadbalancer.yaml
 # 1) Namespace va service nomini aniqlang:
 kubectl get svc -A | grep ingress
 
-# 2) Patch bering (INGRESS_NS va INGRESS_SVC_NAME o'rniga o'z nomingizni yozing):
-kubectl patch svc ingress-nginx-controller -n ingress-nginx \
-  -p '{"spec":{"loadBalancerIP":"144.91.116.93","type":"LoadBalancer"}}'
+# 2) MetalLB (v0.13+) — annotatsiya bilan (zamonaviy usul):
+kubectl annotate svc ingress-nginx-controller -n ingress-nginx \
+  metallb.universe.tf/loadBalancerIPs=144.91.116.93
+
+# 3) K3s built-in ServiceLB bo'lsa, node label qo'yish:
+kubectl label node <NODE_NAME> svccontroller.k3s.cattle.io/enablelb=true
 ```
 
 LoadBalancer IP tasdiqlash:
