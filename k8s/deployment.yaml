@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kuber-test-demo
+  labels:
+    app: kuber-test-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kuber-test-demo
+  template:
+    metadata:
+      labels:
+        app: kuber-test-demo
+    spec:
+      containers:
+        - name: app
+          image: dev.feruzlabs/kuber-test-demo:latest
+          ports:
+            - containerPort: 8010
+          env:
+            - name: SERVER_PORT
+              value: "8010"
+          livenessProbe:
+            httpGet:
+              path: /api-docs
+              port: 8010
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api-docs
+              port: 8010
+            initialDelaySeconds: 30
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"

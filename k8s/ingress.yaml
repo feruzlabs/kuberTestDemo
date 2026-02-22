@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kuber-test-demo
+  labels:
+    app: kuber-test-demo
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: demo.feruzlabs.dev
+      http:
+        paths:
+          - path: /kube-test-1(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: kuber-test-demo
+                port:
+                  number: 80
