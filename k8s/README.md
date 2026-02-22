@@ -148,13 +148,13 @@ ArgoCD `k8s/` papkasidagi barcha manifestlarni avtomatik sync qiladi.
 
 ```bash
 # Tashqaridan HTTPS tekshirish:
-curl -v https://demo.feruzlabs.dev/kube-test-1/swagger-ui.html
+curl -v https://demo.feruzlabs.dev/kube-test-1/swagger-ui/index.html
 
 # Sertifikat ma'lumotlari:
 curl -vI https://demo.feruzlabs.dev/kube-test-1/
 ```
 
-Brauzerda: `https://demo.feruzlabs.dev/kube-test-1/swagger-ui.html`
+Brauzerda: `https://demo.feruzlabs.dev/kube-test-1/swagger-ui/index.html`
 
 ---
 

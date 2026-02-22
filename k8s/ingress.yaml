@@ -7,6 +7,7 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/x-forwarded-prefix: "/kube-test-1"
 spec:
   ingressClassName: nginx
   tls:
