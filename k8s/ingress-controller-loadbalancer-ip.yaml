@@ -1,9 +1,0 @@
-# Ingress Controller (nginx) Service'ga 144.91.116.93 berish uchun patch.
-# Qo'llash: kubectl get svc -A | grep -i ingress  → namespace va name ni oling, keyin:
-#   kubectl patch svc INGRESS_SVC_NAME -n INGRESS_NAMESPACE --patch-file k8s/ingress-controller-loadbalancer-ip.yaml
-# Yoki: kubectl patch svc INGRESS_SVC_NAME -n INGRESS_NAMESPACE -p '{"spec":{"loadBalancerIP":"144.91.116.93"}}'
-#
-# K3s/Rancher: loadBalancerIP ishlamasa, 144.91.116.93 da tashqi proxy qo'yib,
-# trafikni kluster Ingress Controller NodePort/InternalIP ga yo'naltiring.
-spec:
-  loadBalancerIP: "144.91.116.93"

@@ -1,73 +1,177 @@
-# Kubernetes + HTTPS (TLS)
+# Kubernetes Deploy — Tutorial
 
-## Trafik oqimi va IP’lar
+## Trafik oqimi
 
-- **10.43.144.212** — Service’ning **ClusterIP** (faqat kluster ichida). Buni o‘zgartirish shart emas; pod’larga trafik shu orqali boradi.
-- **144.91.116.93** — **tashqi IP** (demo.feruzlabs.dev shu IP’ga resolve bo‘ladi). Kirish shu manzilda bo‘lishi kerak.
-
-Oqim: **Foydalanuvchi → 144.91.116.93 (HTTPS) → Ingress Controller → Service 10.43.144.212:80 → Pod.**
-
-Demak, **144.91.116.93** da Ingress Controller (masalan, nginx ingress) tinglashi kerak. Buning uchun:
-
-1. **Ingress Controller o‘zi 144.91.116.93 da bo‘lsa** (LoadBalancer va provider shu IP’ni bergan): hech narsa qilish shart emas.
-2. **144.91.116.93 boshqa server (proxy) bo‘lsa**: o‘sha serverda `demo.feruzlabs.dev` uchun reverse proxy sozlang va trafikni klusterdagi Ingress Controller’ga yuboring (masalan, NodePort yoki LoadBalancer IP:port).
-3. **LoadBalancer’ga aniq IP berish** (masalan, cloud’da rezerv qilgan 144.91.116.93): Ingress Controller’ning **Service** manifestida `loadBalancerIP: 144.91.116.93` qo‘ying (provider qo‘llab-quvvatlasa).
-
-Tekshirish:
-```bash
-kubectl get svc -A | grep -i ingress
 ```
-Ingress Controller Service’ning EXTERNAL-IP yoki LoadBalancer’i 144.91.116.93 bo‘lishi kerak (yoki 144.91.116.93 proxy orqali shu servisga yo‘naltirilgan bo‘lishi kerak).
+Foydalanuvchi → 144.91.116.93:443 (HTTPS)
+  → Ingress Controller (nginx) — TLS termination, sertifikat
+    → Service kuber-test-demo:443
+      → Pod:8010
+```
 
 ---
 
-## Talablar
-
-- **cert-manager** klusterda o‘rnatilgan bo‘lishi kerak:
-  ```bash
-  kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
-  ```
-
-## Qaysi issuer ishlatish
-
-| Holat | Issuer | O‘zgarish |
-|--------|--------|-----------|
-| **Production**: `demo.feruzlabs.dev` public DNS, Ingress’ga tashqaridan kirish mumkin | Let’s Encrypt | `certificate.yaml` da `issuerRef.name: letsencrypt-prod` (default). `cluster-issuer.yaml` da email o‘zgartiring. |
-| **Lokal** (minikube/kind, DNS faqat hosts yoki lokal) | Self-signed | `certificate.yaml` da `issuerRef.name: selfsigned-issuer` qiling. Brauzer “xavfsiz emas” deydi — “Advance” → “Proceed” yoki CA’ni trust qiling. |
-
-## Apply tartibi
+## 1. cert-manager o'rnatish (TLS uchun)
 
 ```bash
-# 1) ClusterIssuer(lar)
-kubectl apply -f k8s/cluster-issuer.yaml
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
 
-# 2) Certificate (cert-manager Secret yaratadi)
+# Ready bo'lishini kuting (~60 sekund)
+kubectl wait --namespace cert-manager \
+  --for=condition=ready pod \
+  --selector=app.kubernetes.io/instance=cert-manager \
+  --timeout=120s
+```
+
+---
+
+## 2. Ingress NGINX Controller o'rnatish
+
+### A) Rasmiy manifest bilan:
+```bash
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/cloud/deploy.yaml
+```
+
+### B) LoadBalancerIP ni 144.91.116.93 ga o'rnatish
+
+**Yangi o'rnatish:** (bu loyiha fayli orqali)
+```bash
+kubectl apply -f k8s/ingress-nginx-loadbalancer.yaml
+```
+
+**Mavjud ingress-nginx'ga patch berish:**
+```bash
+# 1) Namespace va service nomini aniqlang:
+kubectl get svc -A | grep ingress
+
+# 2) Patch bering (INGRESS_NS va INGRESS_SVC_NAME o'rniga o'z nomingizni yozing):
+kubectl patch svc ingress-nginx-controller -n ingress-nginx \
+  -p '{"spec":{"loadBalancerIP":"144.91.116.93","type":"LoadBalancer"}}'
+```
+
+LoadBalancer IP tasdiqlash:
+```bash
+kubectl get svc ingress-nginx-controller -n ingress-nginx
+# EXTERNAL-IP ustunida 144.91.116.93 ko'rinishi kerak
+```
+
+> **K3s / bare-metal eslatma:** K3s built-in Klipper Load Balancer ishlaydi, lekin `loadBalancerIP` faqat bitta IP olishi mumkin. Agar MetalLB ishlatilsa, IP pool'da 144.91.116.93 bo'lishi kerak.
+
+---
+
+## 3. ClusterIssuer va Certificate yaratish
+
+### Qaysi issuer?
+
+| Holat | Issuer |
+|--------|--------|
+| Public domen, tashqaridan 80/443 ochiq | `letsencrypt-prod` (brauzer ishonadi) |
+| Lokal / test cluster | `selfsigned-issuer` (brauzer ogohlantiradi) |
+
+### cluster-issuer.yaml da emailni o'zgartiring:
+```yaml
+email: admin@feruzlabs.dev   # o'z emailingizni yozing
+```
+
+### certificate.yaml da issuer tanlang:
+```yaml
+# Public:
+issuerRef:
+  name: letsencrypt-prod
+  kind: ClusterIssuer
+
+# Lokal:
+issuerRef:
+  name: selfsigned-issuer
+  kind: ClusterIssuer
+```
+
+### Apply:
+```bash
+kubectl apply -f k8s/cluster-issuer.yaml
 kubectl apply -f k8s/certificate.yaml
 
-# 3) Ingress (TLS secretName: demo-feruzlabs-dev-tls)
+# Sertifikat Ready bo'lishini kuting:
+kubectl get certificate -n default
+# READY = True bo'lishi kerak
+```
+
+---
+
+## 4. Ilovani deploy qilish
+
+### Image build va push:
+```bash
+# Loyiha root'ida:
+docker build -t docker.io/feruzlabs/kuber-test-demo:latest .
+docker push docker.io/feruzlabs/kuber-test-demo:latest
+```
+> `k8s/deployment.yaml` da `image` ni push qilingan manzilga moslashtiring.
+
+### K8s manifestlarni apply:
+```bash
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
 kubectl apply -f k8s/ingress.yaml
 ```
 
-Sertifikat tayyor bo‘lishini tekshirish:
-
+### Tekshirish:
 ```bash
+kubectl get pods
+kubectl get svc
+kubectl get ingress
 kubectl get certificate
-kubectl describe certificate demo-feruzlabs-dev-tls
 ```
 
-`Ready: True` bo‘lsa, Ingress HTTPS orqali ishlaydi.
+---
 
-## Lokal + brauzer xatosiz ko‘rinishi
+## 5. ArgoCD bilan (avtomatik sync)
 
-Self-signed ishlatilsa, brauzer ishonmaydi. Ikkita yo‘l:
+`argocd/application.yaml` da `repoURL` ni o'z Git repo manzilingizga o'zgartiring:
+```yaml
+repoURL: https://github.com/YOUR_ORG/kuberTestDemo.git
+```
 
-1. **Istisno qo‘yish**: brauzerda “Advanced” → “Proceed to demo.feruzlabs.dev (unsafe)”.
-2. **CA’ni ishonchli qilish**: cert-manager’da “SelfSigned” o‘rniga o‘z CA’ingiz bilan sign qiling (yoki `mkcert` bilan mahalliy CA yaratib, shu CA’dan cert chiqarib Ingress’da ishlating).
+Keyin:
+```bash
+kubectl apply -f argocd/application.yaml
+```
 
-### HSTS xatosi (Chrome “Proceed” bermasa)
+ArgoCD `k8s/` papkasidagi barcha manifestlarni avtomatik sync qiladi.
 
-Chrome domen uchun HSTS saqlagan bo‘lsa, self-signed cert bilan ham “Proceed” ishlamaydi. HSTS ni o‘chirish:
+---
 
-1. Chrome’da `chrome://net-internals/#hsts` oching.
-2. **Delete domain security policies** qismida `demo.feruzlabs.dev` yozib **Delete** bosing.
-3. Sahifani qayta oching; endi “Proceed” paydo bo‘lishi mumkin.
+## 6. HTTPS tekshirish
+
+```bash
+# Tashqaridan HTTPS tekshirish:
+curl -v https://demo.feruzlabs.dev/kube-test-1/swagger-ui.html
+
+# Sertifikat ma'lumotlari:
+curl -vI https://demo.feruzlabs.dev/kube-test-1/
+```
+
+Brauzerda: `https://demo.feruzlabs.dev/kube-test-1/swagger-ui.html`
+
+---
+
+## Muammolar
+
+### HSTS xatosi (Chrome "Proceed" bermasa)
+```
+chrome://net-internals/#hsts
+```
+"Delete domain security policies" → `demo.feruzlabs.dev` → Delete.
+
+### Sertifikat tayyor bo'lmasa
+```bash
+kubectl describe certificate demo-feruzlabs-dev-tls
+kubectl describe certificaterequest -n default
+kubectl logs -n cert-manager deploy/cert-manager
+```
+
+### Pod ishlamasa
+```bash
+kubectl describe pod -l app=kuber-test-demo
+kubectl logs -l app=kuber-test-demo
+```

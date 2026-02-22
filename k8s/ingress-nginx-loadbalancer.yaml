@@ -1,0 +1,63 @@
+# =====================================================================
+# Ingress NGINX Controller — LoadBalancer service with specific IP
+# Maqsad: 144.91.116.93 ga 80 (redirect) va 443 (HTTPS) portlarini bog'lash
+# =====================================================================
+#
+# Bu fayl ingress-nginx controller'ni scratch install qilish yoki
+# mavjud install'ga patch berish uchun ishlatiladi.
+#
+# MAVJUD ingress-nginx'ga patch berish:
+#   1) Namespace va service nomini aniqlang:
+#      kubectl get svc -A | grep ingress
+#   2) Patch bering:
+#      kubectl patch svc <SVC_NAME> -n <NAMESPACE> \
+#        -p '{"spec":{"loadBalancerIP":"144.91.116.93"}}'
+#
+# YANGI ingress-nginx o'rnatish (bu fayl bilan):
+#   kubectl apply -f k8s/ingress-nginx-loadbalancer.yaml
+# =====================================================================
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ingress-nginx
+  labels:
+    app.kubernetes.io/name: ingress-nginx
+---
+# ingress-nginx official manifest'ni apply qiling:
+#   kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/cloud/deploy.yaml
+# Keyin faqat service'ni patch qilish uchun quyidagi manifest ishlatiladi:
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
+  labels:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/component: controller
+  annotations:
+    # cloud provider uchun: rezerv qilingan static IP
+    # GKE: kubernetes.io/ingress.regional-static-ip-name: "my-static-ip"
+    # AWS: service.beta.kubernetes.io/aws-load-balancer-eip-allocations: "eipalloc-xxx"
+    # Generic/K3s/bare-metal: loadBalancerIP field ishlating (quyida)
+spec:
+  type: LoadBalancer
+  loadBalancerIP: "144.91.116.93"   # <-- tashqi IP
+  externalTrafficPolicy: Local
+  ipFamilyPolicy: SingleStack
+  ipFamilies:
+    - IPv4
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+      appProtocol: http
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: https
+      appProtocol: https
+  selector:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/component: controller

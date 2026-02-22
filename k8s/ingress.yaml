@@ -23,4 +23,5 @@ spec:
               service:
                 name: kuber-test-demo
                 port:
-                  number: 80
+                  number: 443
+                  
