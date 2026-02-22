@@ -1,5 +1,26 @@
 # Kubernetes + HTTPS (TLS)
 
+## Trafik oqimi va IP’lar
+
+- **10.43.144.212** — Service’ning **ClusterIP** (faqat kluster ichida). Buni o‘zgartirish shart emas; pod’larga trafik shu orqali boradi.
+- **144.91.116.93** — **tashqi IP** (demo.feruzlabs.dev shu IP’ga resolve bo‘ladi). Kirish shu manzilda bo‘lishi kerak.
+
+Oqim: **Foydalanuvchi → 144.91.116.93 (HTTPS) → Ingress Controller → Service 10.43.144.212:80 → Pod.**
+
+Demak, **144.91.116.93** da Ingress Controller (masalan, nginx ingress) tinglashi kerak. Buning uchun:
+
+1. **Ingress Controller o‘zi 144.91.116.93 da bo‘lsa** (LoadBalancer va provider shu IP’ni bergan): hech narsa qilish shart emas.
+2. **144.91.116.93 boshqa server (proxy) bo‘lsa**: o‘sha serverda `demo.feruzlabs.dev` uchun reverse proxy sozlang va trafikni klusterdagi Ingress Controller’ga yuboring (masalan, NodePort yoki LoadBalancer IP:port).
+3. **LoadBalancer’ga aniq IP berish** (masalan, cloud’da rezerv qilgan 144.91.116.93): Ingress Controller’ning **Service** manifestida `loadBalancerIP: 144.91.116.93` qo‘ying (provider qo‘llab-quvvatlasa).
+
+Tekshirish:
+```bash
+kubectl get svc -A | grep -i ingress
+```
+Ingress Controller Service’ning EXTERNAL-IP yoki LoadBalancer’i 144.91.116.93 bo‘lishi kerak (yoki 144.91.116.93 proxy orqali shu servisga yo‘naltirilgan bo‘lishi kerak).
+
+---
+
 ## Talablar
 
 - **cert-manager** klusterda o‘rnatilgan bo‘lishi kerak:
