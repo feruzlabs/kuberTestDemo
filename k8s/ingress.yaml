@@ -9,6 +9,10 @@ metadata:
     nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - demo.feruzlabs.dev
+      secretName: demo-feruzlabs-dev-tls
   rules:
     - host: demo.feruzlabs.dev
       http:

@@ -1,0 +1,14 @@
+# cert-manager bu Secret ni yaratadi; Ingress shu secret dan TLS oladi.
+# Lokal (default): selfsigned-issuer. Public domain: letsencrypt-prod ga o'zgartiring.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: demo-feruzlabs-dev-tls
+  namespace: default
+spec:
+  secretName: demo-feruzlabs-dev-tls
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+  dnsNames:
+    - demo.feruzlabs.dev
