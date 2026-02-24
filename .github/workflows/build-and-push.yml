@@ -68,6 +68,15 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Install ArgoCD CLI
+        if: github.event_name != 'pull_request'
+        run: |
+          curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x argocd
+          sudo mv argocd /usr/local/bin/
+          argocd version --client  # o'rnatilganini tekshirish
+
       - name: ArgoCD Login & Sync
         if: github.event_name != 'pull_request'
         env:
