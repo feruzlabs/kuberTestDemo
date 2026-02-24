@@ -27,14 +27,13 @@ spec:
               value: "dev"
             - name: SERVER_PORT
               value: "8010"
+          # Port ochilguncha kutadi (JVM sekin ishga tushadi); HTTP faqat readiness/liveness da
           startupProbe:
-            httpGet:
-              path: /api-docs
+            tcpSocket:
               port: 8010
-            initialDelaySeconds: 15
-            periodSeconds: 10
-            timeoutSeconds: 15
-            failureThreshold: 18
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 30
           livenessProbe:
             httpGet:
               path: /api-docs
