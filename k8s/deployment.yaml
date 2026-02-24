@@ -34,22 +34,23 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 5
             failureThreshold: 30
+          # Oddiy endpoint — /api-docs birinchi marta og'ir (SpringDoc), timeout bo'lmasin
           livenessProbe:
             httpGet:
-              path: /api-docs
+              path: /api/v1/test
               port: 8010
             periodSeconds: 10
-            timeoutSeconds: 5
+            timeoutSeconds: 10
           readinessProbe:
             httpGet:
-              path: /api-docs
+              path: /api/v1/test
               port: 8010
             periodSeconds: 5
-            timeoutSeconds: 5
+            timeoutSeconds: 10
           resources:
             requests:
               memory: "256Mi"
-              cpu: "100m"
+              cpu: "200m"
             limits:
               memory: "512Mi"
               cpu: "500m"
