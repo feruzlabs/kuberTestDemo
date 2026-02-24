@@ -19,6 +19,7 @@ spec:
           # Docker Hub: docker.io/<USERNAME>/kuber-test-demo:latest
           # GHCR: ghcr.io/<ORG>/kuber-test-demo:latest — build/push qiling, keyin shu image ni yozing
           image: docker.io/feruzlabs/kuber-test-demo:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8010
           env:
