@@ -74,7 +74,7 @@ jobs:
         if: github.event_name != 'pull_request'
         run: |
           mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
 
       - name: ArgoCD Login & Sync
         if: github.event_name != 'pull_request'
