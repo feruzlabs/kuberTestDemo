@@ -73,9 +73,13 @@ jobs:
 
       - name: ArgoCD Login & Sync
         if: github.event_name != 'pull_request'
-        uses: omegion/argocd-app-actions@v1
-        with:
-          server: ${{ secrets.ARGOCD_SERVER }}
-          token: ${{ secrets.ARGOCD_TOKEN }}
-          appName: ${{ secrets.ARGOCD_APP_NAME }}
-          action: sync
+        env:
+          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+          ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
+          ARGOCD_APP: ${{ secrets.ARGOCD_APP_NAME }}
+        run: |
+          curl -sk -X POST "https://$ARGOCD_SERVER/api/v1/applications/$ARGOCD_APP/sync" \
+            -H "Authorization: Bearer $ARGOCD_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{}' \
+            -w "\nHTTP Status: %{http_code}\n"
