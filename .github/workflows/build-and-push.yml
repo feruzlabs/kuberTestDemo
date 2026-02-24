@@ -70,6 +70,11 @@ jobs:
           cache-to: type=gha,mode=max
 
 
+      - name: Configure kubectl
+        if: github.event_name != 'pull_request'
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
 
       - name: ArgoCD Login & Sync
         if: github.event_name != 'pull_request'
@@ -83,3 +88,6 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{}' \
             -w "\nHTTP Status: %{http_code}\n"
+          
+          kubectl rollout restart deployment/kuber-test-demo -n default
+          kubectl rollout status deployment/kuber-test-demo -n default --timeout=120s
