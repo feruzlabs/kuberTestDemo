@@ -68,3 +68,18 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: ArgoCD Login & Sync
+        if: github.event_name != 'pull_request'
+        env:
+          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}       # masalan: argocd.mycompany.com
+          ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}   # masalan: admin
+          ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
+          ARGOCD_APP: ${{ secrets.ARGOCD_APP_NAME }}        # masalan: kuber-test-demo
+        run: |
+          argocd login $ARGOCD_SERVER \
+            --username $ARGOCD_USERNAME \
+            --password $ARGOCD_PASSWORD \
+            --insecure  # self-signed cert bo'lsa
+
+          argocd app sync $ARGOCD_APP --force
+          argocd app wait $ARGOCD_APP --health --timeout 120
