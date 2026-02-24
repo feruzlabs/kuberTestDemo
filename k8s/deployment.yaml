@@ -31,21 +31,22 @@ spec:
             httpGet:
               path: /api-docs
               port: 8010
-            initialDelaySeconds: 10
-            periodSeconds: 5
-            failureThreshold: 24
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 15
+            failureThreshold: 18
           livenessProbe:
             httpGet:
               path: /api-docs
               port: 8010
-            initialDelaySeconds: 0
             periodSeconds: 10
+            timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /api-docs
               port: 8010
-            initialDelaySeconds: 0
             periodSeconds: 5
+            timeoutSeconds: 5
           resources:
             requests:
               memory: "256Mi"
